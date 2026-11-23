@@ -70,6 +70,7 @@ while (fut)
     {
         if (k.KeyChar == '1') mod = 3;
         else if (k.KeyChar == '2') mod = 2;
+        else if (k.KeyChar == '3') Betoltes();
         else if (k.KeyChar == '6') fut = false;
         else if (k.Key == ConsoleKey.Escape || k.Key == ConsoleKey.M) mod = 0;
         else Hiba("Hibás választás! Nyomj érvényes számot, vagy Esc-et.");
@@ -158,6 +159,79 @@ void Nyomda(int forma, int sugar)
     }
 }
 
+void Betoltes()
+{
+    while (true)
+    {
+        // fájlnév bekérése billentyűnként (a ReadLine az utolsó soron görgetne)
+        string nev = "";
+        while (true)
+        {
+            Console.SetCursorPosition(0, 22);
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write(("Fájlnév (Enter = minta.txt): " + nev + "_").PadRight(75));
+            Console.ResetColor();
+            ConsoleKeyInfo b = Console.ReadKey(true);
+            if (b.Key == ConsoleKey.Enter) break;
+            if (b.Key == ConsoleKey.Escape) { mod = 1; return; }
+            if (b.Key == ConsoleKey.Backspace && nev.Length > 0) nev = nev.Substring(0, nev.Length - 1);
+            else if (!char.IsControl(b.KeyChar) && nev.Length < 40) nev += b.KeyChar;
+        }
+        if (nev.Trim() == "") nev = "minta.txt";
+
+        // ellenőrzés: a rajzhoz csak akkor nyúlunk, ha minden rendben van
+        string hiba = "";
+        string[] sorok = new string[0];
+        string ut = Path.Combine(AppContext.BaseDirectory, nev.Trim());
+        if (!File.Exists(ut)) hiba = "A fájl nem található.";
+        else
+        {
+            try { sorok = File.ReadAllLines(ut); }
+            catch (Exception) { hiba = "A fájl nem olvasható."; }
+        }
+        if (hiba == "" && (sorok.Length == 0 || sorok.Length > MAG)) hiba = "A fájl üres, vagy túl sok sora van.";
+        if (hiba == "")
+            for (int i = 0; i < sorok.Length; i++)
+                if (sorok[i].Length > SZEL) hiba = "A(z) " + (i + 1) + ". sor túl hosszú.";
+
+        if (hiba == "")
+        {
+            for (int i = 0; i < MAG; i++)
+                for (int j = 0; j < SZEL; j++)
+                    rajz[i, j] = ' ';
+            for (int i = 0; i < sorok.Length; i++)
+                for (int j = 0; j < sorok[i].Length; j++)
+                {
+                    rajz[i, j] = sorok[i][j];
+                    rajzSzin[i, j] = szinek[szinSzam];     // egységes szín
+                }
+            uzenet = "Betöltve. Folytathatod a rajzolást.";
+            mod = 0;
+            return;
+        }
+
+        // hiba: hang + újrapróbálás lehetősége
+        Hang();
+        Console.SetCursorPosition(0, 22);
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.Write(("✖ " + hiba + " Enter: újra, Esc: mégse").PadRight(75));
+        Console.ResetColor();
+        ConsoleKey gomb = Console.ReadKey(true).Key;
+        while (gomb != ConsoleKey.Enter && gomb != ConsoleKey.Escape)
+        {
+            Hang();
+            gomb = Console.ReadKey(true).Key;
+        }
+        if (gomb == ConsoleKey.Escape)
+        {
+            uzenet = hiba;
+            hibas = true;
+            mod = 1;
+            return;
+        }
+    }
+}
+
 void Rajzol()
 {
     string[] panel = new string[MAG];
@@ -176,6 +250,7 @@ void Rajzol()
         panel[0] = " MENÜ (nyomj számot)";
         panel[1] = " 1 Karakter választása";
         panel[2] = " 2 Szín választása";
+        panel[3] = " 3 Minta betöltése";
         panel[6] = " 6 Kilépés";
         panel[8] = " Esc: vissza a rajzhoz";
     }
