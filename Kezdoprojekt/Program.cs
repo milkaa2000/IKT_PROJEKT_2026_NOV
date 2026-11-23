@@ -56,12 +56,12 @@ while (fut)
         else if (k.Key == ConsoleKey.Spacebar)
         {
             lent = !lent;
-            if (lent) Beir(x, y);
+            if (lent) Beir(x, y);      // letételkor az aktuális cellába is kerül jel
         }
         else if (k.Key >= ConsoleKey.F1 && k.Key <= ConsoleKey.F12)
         {
-            int sorszam = k.Key - ConsoleKey.F1;
-            Nyomda(sorszam / 3, sorszam % 3 + 1);
+            int sorszam = k.Key - ConsoleKey.F1;          // 0..11
+            Nyomda(sorszam / 3, sorszam % 3 + 1);          // forma (0-3) és sugár (1-3)
         }
         else if (k.Key == ConsoleKey.M || k.Key == ConsoleKey.Escape) mod = 1;
         else if (k.Key == ConsoleKey.X) fut = false;
@@ -71,9 +71,22 @@ while (fut)
         if (k.KeyChar == '1') mod = 3;
         else if (k.KeyChar == '2') mod = 2;
         else if (k.KeyChar == '3') Betoltes();
+        else if (k.KeyChar == '4')                 // saját funkció 1: cella törlése
+        {
+            rajz[y, x] = ' ';
+            uzenet = "Cella törölve.";
+            mod = 0;
+        }
+        else if (k.KeyChar == '5')                 // saját funkció 2: ugrás középre
+        {
+            x = SZEL / 2;
+            y = MAG / 2;
+            uzenet = "Ugrás a középpontba.";
+            mod = 0;
+        }
         else if (k.KeyChar == '6') fut = false;
         else if (k.Key == ConsoleKey.Escape || k.Key == ConsoleKey.M) mod = 0;
-        else Hiba("Hibás választás! Nyomj érvényes számot, vagy Esc-et.");
+        else Hiba("Hibás választás! Nyomj 1-6 közötti számot, vagy Esc-et.");
     }
     else if (mod == 2)                             // ---------- színválasztás ----------
     {
@@ -130,15 +143,17 @@ void Lep(int dx, int dy)
     if (ujX < 0 || ujX >= SZEL || ujY < 0 || ujY >= MAG)
     {
         Hiba("A rajzlap szélén vagy, tovább nem léphetsz.");
-        return;
+        return;                                  // a kurzor és a rajz marad
     }
     x = ujX;
     y = ujY;
     if (lent) Beir(x, y);
 }
 
+// forma: 0 = X, 1 = kereszt, 2 = négyzetkeret, 3 = rombuszkeret; sugar: 1 = 3x3, 2 = 5x5, 3 = 7x7
 void Nyomda(int forma, int sugar)
 {
+    // előbb a teljes befoglaló négyzetet ellenőrizzük, és csak utána rajzolunk
     if (x - sugar < 0 || x + sugar >= SZEL || y - sugar < 0 || y + sugar >= MAG)
     {
         Hiba("A nyomda kilógna a rajzlapról, nem rajzoltam semmit.");
@@ -234,6 +249,7 @@ void Betoltes()
 
 void Rajzol()
 {
+    // bal panel (20 sor, mindegyik 23 karakter széles)
     string[] panel = new string[MAG];
     for (int i = 0; i < MAG; i++) panel[i] = "";
 
@@ -251,6 +267,8 @@ void Rajzol()
         panel[1] = " 1 Karakter választása";
         panel[2] = " 2 Szín választása";
         panel[3] = " 3 Minta betöltése";
+        panel[4] = " 4 Cella törlése";
+        panel[5] = " 5 Ugrás középre";
         panel[6] = " 6 Kilépés";
         panel[8] = " Esc: vissza a rajzhoz";
     }
@@ -293,9 +311,10 @@ void Rajzol()
         {
             if (i == y && j == x)
             {
+                // kurzor: letett eszköznél zöld, felemeltnél sárga háttér
                 Console.BackgroundColor = lent ? ConsoleColor.Green : ConsoleColor.Yellow;
                 Console.ForegroundColor = ConsoleColor.Black;
-                Console.Write(rajz[i, j]);
+                Console.Write(rajz[i, j]);       // üres cellánál szóköz, tehát színes négyzet
             }
             else if (rajz[i, j] == ' ')
             {
@@ -311,7 +330,7 @@ void Rajzol()
         }
     }
 
-    // alsó két sor
+    // alsó két sor (75 karakter, hogy a konzol ne görgessen)
     Console.SetCursorPosition(0, 21);
     Console.ForegroundColor = ConsoleColor.DarkGray;
     if (mod == 0) Console.Write("Nyilak: mozgás  Szóköz: eszköz  F1-F12: nyomda  M: menü  X: kilépés".PadRight(75));
