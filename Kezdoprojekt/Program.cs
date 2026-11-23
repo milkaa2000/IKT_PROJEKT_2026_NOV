@@ -31,13 +31,14 @@ int y = MAG / 2;
 char karakter = '#';       // aktuális rajzkarakter
 int szinSzam = 0;          // az aktuális szín sorszáma a szinek tömbben
 bool lent = false;         // false = felemelve, true = letéve
+int mod = 0;               // 0 = rajzolás, 1 = menü, 2 = színválasztás, 3 = karakterválasztás
 string uzenet = "";
 bool hibas = false;
 bool fut = true;
 
 Console.CursorVisible = false;
 Console.Clear();
-uzenet = "Üdv! Nyilak: mozgás, Szóköz: eszköz, F1-F12: nyomdák.";
+uzenet = "Üdv! Nyilak: mozgás, Szóköz: eszköz, M: menü.";
 
 while (fut)
 {
@@ -46,21 +47,53 @@ while (fut)
     uzenet = "";
     hibas = false;
 
-    if (k.Key == ConsoleKey.UpArrow) Lep(0, -1);
-    else if (k.Key == ConsoleKey.DownArrow) Lep(0, 1);
-    else if (k.Key == ConsoleKey.LeftArrow) Lep(-1, 0);
-    else if (k.Key == ConsoleKey.RightArrow) Lep(1, 0);
-    else if (k.Key == ConsoleKey.Spacebar)
+    if (mod == 0)                                  // ---------- rajzolás ----------
     {
-        lent = !lent;
-        if (lent) Beir(x, y);      // letételkor az aktuális cellába is kerül jel
+        if (k.Key == ConsoleKey.UpArrow) Lep(0, -1);
+        else if (k.Key == ConsoleKey.DownArrow) Lep(0, 1);
+        else if (k.Key == ConsoleKey.LeftArrow) Lep(-1, 0);
+        else if (k.Key == ConsoleKey.RightArrow) Lep(1, 0);
+        else if (k.Key == ConsoleKey.Spacebar)
+        {
+            lent = !lent;
+            if (lent) Beir(x, y);
+        }
+        else if (k.Key >= ConsoleKey.F1 && k.Key <= ConsoleKey.F12)
+        {
+            int sorszam = k.Key - ConsoleKey.F1;
+            Nyomda(sorszam / 3, sorszam % 3 + 1);
+        }
+        else if (k.Key == ConsoleKey.M || k.Key == ConsoleKey.Escape) mod = 1;
+        else if (k.Key == ConsoleKey.X) fut = false;
     }
-    else if (k.Key >= ConsoleKey.F1 && k.Key <= ConsoleKey.F12)
+    else if (mod == 1)                             // ---------- menü ----------
     {
-        int sorszam = k.Key - ConsoleKey.F1;          // 0..11
-        Nyomda(sorszam / 3, sorszam % 3 + 1);          // forma (0-3) és sugár (1-3)
+        if (k.KeyChar == '1') mod = 3;
+        else if (k.KeyChar == '2') mod = 2;
+        else if (k.KeyChar == '6') fut = false;
+        else if (k.Key == ConsoleKey.Escape || k.Key == ConsoleKey.M) mod = 0;
+        else Hiba("Hibás választás! Nyomj érvényes számot, vagy Esc-et.");
     }
-    else if (k.Key == ConsoleKey.X) fut = false;
+    else if (mod == 2)                             // ---------- színválasztás ----------
+    {
+        if (k.KeyChar >= '1' && k.KeyChar <= '8')
+        {
+            szinSzam = k.KeyChar - '1';
+            mod = 0;
+        }
+        else if (k.Key == ConsoleKey.Escape) mod = 1;
+        else Hiba("Hibás választás! Nyomj 1-8 közötti számot, vagy Esc-et.");
+    }
+    else                                           // ---------- karakterválasztás ----------
+    {
+        if (k.Key == ConsoleKey.Escape) mod = 1;
+        else if (!char.IsControl(k.KeyChar))
+        {
+            karakter = k.KeyChar;
+            mod = 0;
+        }
+        else Hiba("Ezt a billentyűt nem lehet karakternek használni.");
+    }
 }
 
 Console.ResetColor();
@@ -96,17 +129,15 @@ void Lep(int dx, int dy)
     if (ujX < 0 || ujX >= SZEL || ujY < 0 || ujY >= MAG)
     {
         Hiba("A rajzlap szélén vagy, tovább nem léphetsz.");
-        return;                                  // a kurzor és a rajz marad
+        return;
     }
     x = ujX;
     y = ujY;
     if (lent) Beir(x, y);
 }
 
-// forma: 0 = X, 1 = kereszt, 2 = négyzetkeret, 3 = rombuszkeret; sugar: 1 = 3x3, 2 = 5x5, 3 = 7x7
 void Nyomda(int forma, int sugar)
 {
-    // előbb a teljes befoglaló négyzetet ellenőrizzük, és csak utána rajzolunk
     if (x - sugar < 0 || x + sugar >= SZEL || y - sugar < 0 || y + sugar >= MAG)
     {
         Hiba("A nyomda kilógna a rajzlapról, nem rajzoltam semmit.");
@@ -132,11 +163,34 @@ void Rajzol()
     string[] panel = new string[MAG];
     for (int i = 0; i < MAG; i++) panel[i] = "";
 
-    panel[0] = " X: kilépés";
-    panel[2] = " Nyilak: mozgás";
-    panel[3] = " Szóköz: toll fel/le";
-    panel[4] = " F1-F12: nyomdák";
-
+    if (mod == 0)
+    {
+        panel[0] = " M: menü";
+        panel[1] = " X: kilépés";
+        panel[3] = " Nyilak: mozgás";
+        panel[4] = " Szóköz: toll fel/le";
+        panel[5] = " F1-F12: nyomdák";
+    }
+    else if (mod == 1)
+    {
+        panel[0] = " MENÜ (nyomj számot)";
+        panel[1] = " 1 Karakter választása";
+        panel[2] = " 2 Szín választása";
+        panel[6] = " 6 Kilépés";
+        panel[8] = " Esc: vissza a rajzhoz";
+    }
+    else if (mod == 2)
+    {
+        panel[0] = " Szín (nyomj számot)";
+        for (int i = 0; i < szinNevek.Length; i++)
+            panel[1 + i] = " " + (i + 1) + " " + szinNevek[i];
+    }
+    else
+    {
+        panel[0] = " Üss le egy billentyűt,";
+        panel[1] = " ez lesz a karakter.";
+        panel[2] = " (Esc: mégse)";
+    }
     panel[12] = " Pozíció   (" + x + ", " + y + ")";
     panel[13] = " Karakter  " + karakter;
     panel[14] = " Szín      " + szinNevek[szinSzam];
@@ -185,7 +239,8 @@ void Rajzol()
     // alsó két sor
     Console.SetCursorPosition(0, 21);
     Console.ForegroundColor = ConsoleColor.DarkGray;
-    Console.Write("Nyilak: mozgás  Szóköz: eszköz  F1-F12: nyomda  X: kilépés".PadRight(75));
+    if (mod == 0) Console.Write("Nyilak: mozgás  Szóköz: eszköz  F1-F12: nyomda  M: menü  X: kilépés".PadRight(75));
+    else Console.Write("Nyomj számot a választáshoz   Esc: vissza".PadRight(75));
     Console.SetCursorPosition(0, 22);
     Console.ForegroundColor = hibas ? ConsoleColor.Red : ConsoleColor.Green;
     Console.Write(uzenet.PadRight(75));
