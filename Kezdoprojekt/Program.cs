@@ -37,7 +37,7 @@ bool fut = true;
 
 Console.CursorVisible = false;
 Console.Clear();
-uzenet = "Üdv! Nyilak: mozgás, Szóköz: eszköz, X: kilépés.";
+uzenet = "Üdv! Nyilak: mozgás, Szóköz: eszköz, F1-F12: nyomdák.";
 
 while (fut)
 {
@@ -54,6 +54,11 @@ while (fut)
     {
         lent = !lent;
         if (lent) Beir(x, y);      // letételkor az aktuális cellába is kerül jel
+    }
+    else if (k.Key >= ConsoleKey.F1 && k.Key <= ConsoleKey.F12)
+    {
+        int sorszam = k.Key - ConsoleKey.F1;          // 0..11
+        Nyomda(sorszam / 3, sorszam % 3 + 1);          // forma (0-3) és sugár (1-3)
     }
     else if (k.Key == ConsoleKey.X) fut = false;
 }
@@ -98,6 +103,30 @@ void Lep(int dx, int dy)
     if (lent) Beir(x, y);
 }
 
+// forma: 0 = X, 1 = kereszt, 2 = négyzetkeret, 3 = rombuszkeret; sugar: 1 = 3x3, 2 = 5x5, 3 = 7x7
+void Nyomda(int forma, int sugar)
+{
+    // előbb a teljes befoglaló négyzetet ellenőrizzük, és csak utána rajzolunk
+    if (x - sugar < 0 || x + sugar >= SZEL || y - sugar < 0 || y + sugar >= MAG)
+    {
+        Hiba("A nyomda kilógna a rajzlapról, nem rajzoltam semmit.");
+        return;
+    }
+    for (int dy = -sugar; dy <= sugar; dy++)
+    {
+        for (int dx = -sugar; dx <= sugar; dx++)
+        {
+            bool jelolt;
+            if (forma == 0) jelolt = Math.Abs(dx) == Math.Abs(dy);
+            else if (forma == 1) jelolt = dx == 0 || dy == 0;
+            else if (forma == 2) jelolt = Math.Abs(dx) == sugar || Math.Abs(dy) == sugar;
+            else jelolt = Math.Abs(dx) + Math.Abs(dy) == sugar;
+
+            if (jelolt) Beir(x + dx, y + dy);
+        }
+    }
+}
+
 void Rajzol()
 {
     string[] panel = new string[MAG];
@@ -106,6 +135,7 @@ void Rajzol()
     panel[0] = " X: kilépés";
     panel[2] = " Nyilak: mozgás";
     panel[3] = " Szóköz: toll fel/le";
+    panel[4] = " F1-F12: nyomdák";
 
     panel[12] = " Pozíció   (" + x + ", " + y + ")";
     panel[13] = " Karakter  " + karakter;
@@ -155,7 +185,7 @@ void Rajzol()
     // alsó két sor
     Console.SetCursorPosition(0, 21);
     Console.ForegroundColor = ConsoleColor.DarkGray;
-    Console.Write("Nyilak: mozgás  Szóköz: eszköz  X: kilépés".PadRight(75));
+    Console.Write("Nyilak: mozgás  Szóköz: eszköz  F1-F12: nyomda  X: kilépés".PadRight(75));
     Console.SetCursorPosition(0, 22);
     Console.ForegroundColor = hibas ? ConsoleColor.Red : ConsoleColor.Green;
     Console.Write(uzenet.PadRight(75));
